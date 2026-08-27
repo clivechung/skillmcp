@@ -13,7 +13,7 @@ AI agents require access to specialized, domain-specific skills (instructions, m
 
 The **Skill Management System (`skillmcp`)** is a containerized, horizontally scalable Model Context Protocol (MCP) server that standardizes skill distribution, discovery, and execution for AI agents:
 1. **Containerized Skill & Server Package**: Skill definitions (`SKILL.md`, `references/`, and `examples/`) and the FastMCP application are built and packaged into an optimized, secure container image.
-2. **Horizontal Scalability (MCP over Streamable HTTP/SSE)**: Implements Streamable HTTP/SSE MCP transport so multiple stateless backend replicas run concurrently behind an ingress load balancer.
+2. **Horizontal Scalability (Stateless MCP over Streamable HTTP)**: Implements Streamable HTTP MCP transport where stateless backend replicas handle independent request/response cycles without sticky sessions or long-lived server-held sockets, alongside backward-compatible SSE support.
 3. **Nginx Ingress Reverse Proxy**: Provides load balancing (`least_conn`), request routing, SSE stream buffer management (`proxy_buffering off`), and orchestrator health checks.
 4. **Dual Compose Environments**:
    - `docker-compose.yml`: Production-ready multi-replica deployment pulling images from `docker.io`.
@@ -187,6 +187,13 @@ Detailed instructions, steps, constraints, and guidelines for the AI agent...
 | `/healthz` | `GET` | Application health monitoring | `{"status": "healthy", "service": "skillmcp", "version": "0.1.0"}` |
 | `/mcp` | `GET`, `POST` | Primary FastMCP streamable-http endpoint | MCP transport stream / message exchange |
 | `/sse` | `GET`, `POST` | Backward-compatible SSE route alias | Proxied to MCP transport endpoint |
+
+### 6.4 Transport Modes & Scalability Implications
+
+> [!WARNING]
+> **Transport Selection & Load Balancing Constraints**:
+> - **Streamable HTTP (`SKILLMCP_TRANSPORT=streamable-http`, Default)**: Each JSON-RPC invocation is a discrete HTTP POST request. Backend instances hold no persistent socket session state between client requests, enabling full horizontal auto-scaling and stateless load balancing across arbitrary replicas without session affinity.
+> - **Native SSE (`SKILLMCP_TRANSPORT=sse`)**: Stateful transport. The initial `GET /sse` handshake opens a long-lived persistent TCP connection held in server memory on that specific replica instance. Subsequent `POST /messages/?session_id=...` calls routed by a round-robin or least-conn load balancer to a different replica will fail with 404/session mismatch errors. Deploying in Native SSE mode requires either a single replica or sticky session ingress routing (e.g. Nginx `ip_hash` or cookie affinity).
 
 ---
 
