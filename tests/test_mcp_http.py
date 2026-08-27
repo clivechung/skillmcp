@@ -85,6 +85,7 @@ async def test_streamable_http_transport(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_sse_handshake_and_initialize_endpoint(tmp_path: Path):
     """Verifies that the SSE endpoint handshake returns a valid endpoint and accepts MCP initialize."""
+    import asyncio
     create_sample_skill(tmp_path, "skill-init", "Testing init skill", "Body instructions")
 
     scanner = SkillScanner(skills_root=tmp_path)
@@ -92,16 +93,34 @@ async def test_sse_handshake_and_initialize_endpoint(tmp_path: Path):
     settings = Settings(transport="sse")
     app = create_app(service=service, settings=settings)
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        # Step 1: Connect to /sse stream
-        async with client.stream("GET", "/sse") as response:
-            assert response.status_code == 200
-            endpoint_line = None
-            async for line in response.aiter_lines():
-                if line.startswith("data:"):
-                    endpoint_line = line.split("data:")[1].strip()
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            endpoint_line: str | None = None
+
+            async def read_sse_endpoint():
+                nonlocal endpoint_line
+                try:
+                    async with client.stream("GET", "/sse") as response:
+                        assert response.status_code == 200
+                        async for line in response.aiter_lines():
+                            if line.startswith("data:"):
+                                endpoint_line = line.split("data:")[1].strip()
+                                return
+                except (asyncio.CancelledError, GeneratorExit, Exception):
+                    pass
+
+            sse_task = asyncio.create_task(read_sse_endpoint())
+            for _ in range(50):
+                if endpoint_line:
                     break
+                await asyncio.sleep(0.05)
+
+            sse_task.cancel()
+            try:
+                await asyncio.wait_for(sse_task, timeout=1.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
 
             assert endpoint_line is not None
             assert "/messages" in endpoint_line
@@ -120,6 +139,5 @@ async def test_sse_handshake_and_initialize_endpoint(tmp_path: Path):
             resp = await client.post(endpoint_line, json=init_payload)
             # FastMCP returns 202 Accepted on message post
             assert resp.status_code == 202
-            await response.aclose()
 
 
