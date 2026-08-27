@@ -1,0 +1,28 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: skillmcp-ingress
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - skillmcp-app
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  skillmcp-app:
+    image: ${SKILLMCP_IMAGE:-docker.io/clivechung/skillmcp:latest}
+    restart: unless-stopped
+    environment:
+      - SKILLMCP_LOG_LEVEL=INFO
+      - SKILLMCP_HOST=0.0.0.0
+      - SKILLMCP_PORT=8000
+    deploy:
+      replicas: 2
+
+
