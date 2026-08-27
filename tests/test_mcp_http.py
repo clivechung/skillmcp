@@ -81,6 +81,17 @@ async def test_streamable_http_transport(tmp_path: Path):
             resp_sse = await client.post("/sse", json=init_payload, headers=headers)
             assert resp_sse.status_code == 200
 
+            # Stateless tool list call without session tracking
+            tool_list_payload = {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/list",
+                "params": {},
+            }
+            resp_tools = await client.post("/mcp", json=tool_list_payload, headers=headers)
+            assert resp_tools.status_code == 200
+            assert "list_skills" in resp_tools.text
+
 
 @pytest.mark.asyncio
 async def test_sse_transport_app_configuration(tmp_path: Path):
