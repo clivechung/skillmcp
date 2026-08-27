@@ -1,32 +1,32 @@
 ---
 name: skillmcp
 description: >-
-  Connect to, query, and manage skills using the SkillMCP (Skill Management System) MCP server over Streamable HTTP (/mcp) or SSE (/sse).
-  Use this skill whenever discovering, searching, inspecting, or fetching AI agent skills, reference documents, or examples from a SkillMCP server instance.
+  Connect to, query, and manage AI agent skills using the stateless SkillMCP (Skill Management System) server over Streamable HTTP.
+  Use this skill whenever discovering, searching, inspecting, or fetching AI agent skills, reference documents, or examples from a containerized or remote SkillMCP server instance.
 category: software
 ---
 
 # SkillMCP MCP Server Integration
 
-A guide and reference workflow for connecting to, discovering, searching, and consuming AI agent skills via the **SkillMCP (Skill Management System)** Model Context Protocol (MCP) server.
+A guide and operational workflow for discovering, searching, inspecting, and retrieving AI agent skills via the **SkillMCP (Skill Management System)** Model Context Protocol (MCP) server.
+
+SkillMCP delivers a centralized, horizontally scalable skill repository designed for autonomous agent fleets. It uses **Stateless Streamable HTTP** by default, allowing request/response decoupling across multiple backend replicas without requiring sticky sessions.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Connection Endpoints
+### 1. Transport & Connection Matrix
 
-SkillMCP supports both **Streamable HTTP Transport** (recommended) and **SSE Transport**:
+| Transport Mode | Endpoint URL | HTTP Method | Header Requirements | Statefulness |
+| :--- | :--- | :--- | :--- | :--- |
+| **Streamable HTTP (Default)** | `http://<host>:8080/mcp` *(or `/sse`)* | `POST` | `Accept: application/json, text/event-stream`<br>`Content-Type: application/json` | **Stateless** (horizontally scalable) |
+| **Native SSE** | `http://<host>:8080/sse` | `GET` (stream) + `POST` (/messages) | Standard SSE headers | **Stateful** (requires session affinity) |
+| **Health Check** | `http://<host>:8080/healthz` | `GET` | None | **Stateless** |
 
-| Transport Mode | Endpoint URL | HTTP Method | Header Requirements |
-| :--- | :--- | :--- | :--- |
-| **Streamable HTTP (Default)** | `http://<host>:8080/mcp` *(or `/sse`)* | `POST` | `Accept: application/json, text/event-stream` |
-| **SSE Transport** | `http://<host>:8080/sse` | `GET` (stream) + `POST` (/messages) | Standard SSE headers |
-| **Health Check** | `http://<host>:8080/healthz` | `GET` | None |
+### 2. Antigravity MCP Client Configuration (`mcp_config.json`)
 
-### 2. Antigravity MCP Configuration (`mcp_config.json`)
-
-To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP clients:
+To register a remote SkillMCP instance in Antigravity or standard MCP client configurations:
 
 ```json
 {
@@ -39,15 +39,20 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
 }
 ```
 
+> [!NOTE]
+> SkillMCP aliases `/sse` to the Streamable HTTP handler when running in streamable mode, so existing client configs pointing to `http://localhost:8080/sse` work out of the box.
+
 ---
 
 ## 🛠️ Workflows
 
-### Workflow 1: Connecting & Initializing the Server
+### Workflow 1: Connecting & Validating Server Health
 
-1. **Verify Health**:
-   Send a `GET` request to `http://<host>:8080/healthz`. Verify `status_code == 200` and response content `{"status": "healthy", ...}`.
-2. **Perform MCP Handshake (Streamable HTTP)**:
+1. **Verify Backend Health & Readiness**:
+   Send a `GET` request to `http://<host>:8080/healthz`.
+   - **Expected Status**: `200 OK`
+   - **Expected Body**: `{"status": "healthy", "service": "skillmcp", "version": "<version>"}`
+2. **Perform Stateless JSON-RPC Handshake**:
    Send an `initialize` JSON-RPC request to `/mcp` with header `Accept: application/json, text/event-stream`:
    ```json
    {
@@ -61,14 +66,15 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
      }
    }
    ```
-3. **Confirm Capabilities**: Ensure server returns protocol version `2024-11-05` and declared capabilities for `tools`, `prompts`, and `resources`.
+3. **Verify Server Capabilities**:
+   Ensure the response confirms protocol version `2024-11-05` and advertises `tools`, `prompts`, and `resources`.
 
 ---
 
-### Workflow 2: Discovering & Fetching Skills
+### Workflow 2: Discovering & Searching Skills
 
 1. **List All Available Skills**:
-   Call the `list_skills` MCP tool to retrieve an array of available skills with names, descriptions, and metadata:
+   Call `list_skills` to retrieve summary metadata for all skills available on the server (names, descriptions, categories, references, and examples):
    ```json
    {
      "jsonrpc": "2.0",
@@ -80,8 +86,8 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
      }
    }
    ```
-2. **Search Skills by Keyword**:
-   Call `search_skills` when looking for skills matching a specific workflow keyword or topic:
+2. **Search Skills by Topic or Keyword**:
+   Call `search_skills` when seeking skills relevant to a specific task, technology, or domain:
    ```json
    {
      "jsonrpc": "2.0",
@@ -93,8 +99,13 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
      }
    }
    ```
-3. **Fetch Full Skill Content**:
-   Call `get_skill` to retrieve the complete `SKILL.md` instructions and frontmatter for a specific skill:
+
+---
+
+### Workflow 3: Retrieving Skill Instructions & Associated Assets
+
+1. **Retrieve Full Skill Instructions (`SKILL.md`)**:
+   Call `get_skill` with the skill name to fetch complete markdown instructions and frontmatter:
    ```json
    {
      "jsonrpc": "2.0",
@@ -106,13 +117,8 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
      }
    }
    ```
-
----
-
-### Workflow 3: Inspecting References, Examples & Resources
-
-1. **Read Bundled Skill Reference**:
-   When a skill references additional documentation in `references/`, fetch it using `read_skill_reference`:
+2. **Fetch Referenced Documentation (`references/`)**:
+   When a skill references supplemental deep-dive documents listed in its metadata, fetch them using `read_skill_reference`:
    ```json
    {
      "jsonrpc": "2.0",
@@ -127,8 +133,8 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
      }
    }
    ```
-2. **Read Bundled Skill Example**:
-   When a skill references example walkthroughs in `examples/`, fetch it using `read_skill_example`:
+3. **Fetch Practical Examples (`examples/`)**:
+   When concrete implementation samples are required, fetch them using `read_skill_example`:
    ```json
    {
      "jsonrpc": "2.0",
@@ -143,8 +149,8 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
      }
    }
    ```
-3. **Read via MCP Resource URI**:
-   SkillMCP exposes skills directly as MCP resources at `skill://{name}`:
+4. **Access via MCP Resource URI**:
+   Directly inspect skill markdown via standard MCP resource URI `skill://{name}`:
    ```json
    {
      "jsonrpc": "2.0",
@@ -158,20 +164,29 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
 
 ---
 
-## 📋 MCP Tools & Resources Reference Table
+### Workflow 4: Managing Stateless Replicas & Load Balancing
 
-| Name | Type | Description | Key Arguments |
-| :--- | :--- | :--- | :--- |
-| `list_skills` | Tool | List all available skills with metadata, references, and examples. | None |
-| `get_skill` | Tool | Get full instructions and markdown content for a skill. | `name` (str) |
-| `search_skills` | Tool | Search available skills by keyword or topic query. | `query` (str) |
-| `read_skill_reference` | Tool | Read a bundled reference document for a given skill. | `name` (str), `ref_path` (str) |
-| `read_skill_example` | Tool | Read a bundled example document for a given skill. | `name` (str), `example_path` (str) |
-| `skill://{name}` | Resource | MCP Resource URI returning full skill document markdown. | `name` (URI parameter) |
+1. **Horizontal Scaling**:
+   Because Streamable HTTP is stateless (`stateless_http=True`), requests can be distributed across any number of container replicas behind Nginx (`least_conn` or `round_robin`) without sticky session cookies (`ip_hash`).
+2. **Health Monitoring & Zero-Downtime Updates**:
+   Target `/healthz` for load balancer probes, Kubernetes liveness/readiness probes, or rolling deployments.
 
 ---
 
-## 📚 Deep Dive References & Examples
+## 📋 MCP Tools & Resources Reference
 
-- [SkillMCP API & JSON-RPC Specification](references/api-spec.md) — Complete JSON-RPC tool signatures and transport details.
-- [MCP Client Implementation Examples](examples/mcp-client-usage.md) — Python, TypeScript, and cURL examples for interacting with SkillMCP.
+| Name | Type | Description | Parameters | Return Type |
+| :--- | :--- | :--- | :--- | :--- |
+| `list_skills` | Tool | Lists all available skills with metadata, categories, references, and examples. | None | `Array<SkillMetadata>` |
+| `get_skill` | Tool | Retrieves full markdown instructions (`SKILL.md`) for a skill. | `name` (string, required) | `string` (Markdown) |
+| `search_skills` | Tool | Searches available skills matching a keyword or topic query. | `query` (string, required) | `Array<SkillMetadata>` |
+| `read_skill_reference` | Tool | Reads a bundled reference document from a skill's `references/` directory. | `name` (string, required),<br>`ref_path` (string, required) | `string` (Markdown) |
+| `read_skill_example` | Tool | Reads a bundled example document from a skill's `examples/` directory. | `name` (string, required),<br>`example_path` (string, required) | `string` (Markdown) |
+| `skill://{name}` | Resource | Exposes skill markdown content as a standard MCP Resource. | `name` (URI parameter) | `text/markdown` |
+
+---
+
+## 📚 Advanced Features & References
+
+- [SkillMCP API & JSON-RPC Specification](references/api-spec.md) — Comprehensive JSON-RPC schemas, transport headers, and stateless request lifecycle.
+- [MCP Client Implementation Examples](examples/mcp-client-usage.md) — Python (`httpx`/`mcp`), TypeScript, and cURL implementation patterns for stateless MCP calls.

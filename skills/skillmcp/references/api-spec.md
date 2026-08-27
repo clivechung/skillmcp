@@ -6,18 +6,26 @@ Detailed technical specification of SkillMCP HTTP transport endpoints, JSON-RPC 
 
 ## 🌐 Transport Protocols
 
-### 1. Streamable HTTP Transport (Default)
+### 1. Stateless Streamable HTTP Transport (Default)
 - **Path**: `/mcp` (or `/sse` alias)
 - **Method**: `POST`
 - **Headers**:
   - `Content-Type: application/json`
   - `Accept: application/json, text/event-stream`
-- **Behavior**: Accepts standard MCP JSON-RPC protocol messages (`initialize`, `tools/list`, `tools/call`, `resources/read`).
+- **Stateless Architecture**:
+  - Each incoming HTTP request is self-contained and handles its own JSON-RPC lifecycle.
+  - Server does not retain persistent in-memory session state between separate requests, allowing arbitrary load balancing across replicas.
+  - Streaming responses are streamed over `text/event-stream` and closed immediately upon JSON-RPC response completion.
 
-### 2. SSE Transport
+### 2. Native SSE Transport (`SKILLMCP_TRANSPORT=sse`)
 - **Handshake Path**: `GET /sse`
 - **Message Path**: `POST /messages/?session_id=<UUID>`
-- **Behavior**: `GET /sse` opens an event stream and emits an `endpoint` event containing the target URI for message posting.
+- **Behavior**: `GET /sse` establishes an open SSE event stream and returns an `endpoint` event with session routing. Requires sticky sessions or single-replica deployment.
+
+### 3. Health & Readiness Probe
+- **Path**: `GET /healthz`
+- **Status Code**: `200 OK`
+- **Response Format**: `{"status": "healthy", "service": "skillmcp", "version": "<version>"}`
 
 ---
 
