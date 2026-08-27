@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 import yaml
 
-from skill_mcp.domain.models import SkillDocument
+from skillmcp.domain.models import SkillDocument
 
 logger = logging.getLogger(__name__)
 

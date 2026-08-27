@@ -1,8 +1,8 @@
 """Domain service orchestrating skill retrieval and search operations."""
 
 import logging
-from skill_mcp.domain.models import SkillDocument
-from skill_mcp.domain.scanner import SkillScanner
+from skillmcp.domain.models import SkillDocument
+from skillmcp.domain.scanner import SkillScanner
 
 logger = logging.getLogger(__name__)
 

@@ -66,11 +66,11 @@ class AppSettings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "SkillMS API"
+    app_name: str = "MyApp API"
     environment: str = Field(default="development", pattern="^(development|staging|production)$")
     log_level: str = "INFO"
     database_url: PostgresDsn = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/skillms"
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/myapp"
     )
     api_key_secret: str = Field(default="dev-secret-key", min_length=8)
 
@@ -213,7 +213,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 ### Alembic Workflow
 - Initialize: `uv run alembic init -t async migrations`
-- Generate Migration: `uv run alembic revision --autogenerate -m "create_skills_table"`
+- Generate Migration: `uv run alembic revision --autogenerate -m "create_items_table"`
 - Apply Migrations: `uv run alembic upgrade head`
 
 ---
@@ -226,18 +226,18 @@ Expose AI tools and resources using `FastMCP` with strict Pydantic schemas and d
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
-mcp = FastMCP("SkillMS Tools")
+mcp = FastMCP("App Tools")
 
-class SearchSkillsInput(BaseModel):
+class SearchItemsInput(BaseModel):
     query: str = Field(description="Search term or capability query")
     limit: int = Field(default=5, ge=1, le=50, description="Max results to return")
 
 @mcp.tool()
-async def search_skills(query: str, limit: int = 5) -> str:
-    """Search registered skills by capability or keyword."""
+async def search_items(query: str, limit: int = 5) -> str:
+    """Search registered items by capability or keyword."""
     # Delegate to underlying domain service
-    # results = await skill_service.search(query=query, limit=limit)
-    return f"Found skills matching '{query}' (limit {limit})"
+    # results = await item_service.search(query=query, limit=limit)
+    return f"Found items matching '{query}' (limit {limit})"
 ```
 
 ---

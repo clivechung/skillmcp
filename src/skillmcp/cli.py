@@ -10,13 +10,13 @@ import uvicorn
 from rich.console import Console
 from rich.table import Table
 
-from skill_mcp.config import Settings
-from skill_mcp.domain.scanner import SkillScanner
-from skill_mcp.domain.service import SkillService
-from skill_mcp.logging import setup_logging
+from skillmcp.config import Settings
+from skillmcp.domain.scanner import SkillScanner
+from skillmcp.domain.service import SkillService
+from skillmcp.logging import setup_logging
 
 app = typer.Typer(
-    name="skill-mcp",
+    name="skillmcp",
     help="SkillMCP CLI and server runner.",
     add_completion=False,
 )
@@ -45,7 +45,7 @@ def serve(
     console.print(f"[bold green]Starting SkillMCP server on {settings.host}:{settings.port}[/bold green]")
     console.print(f"[blue]Serving skills from: {settings.skills_dir.resolve()}[/blue]")
 
-    from skill_mcp.server.mcp_app import create_app
+    from skillmcp.server.mcp_app import create_app
 
     server_app = create_app(settings=settings)
     uvicorn.run(

@@ -28,7 +28,7 @@ AI agents rely on domain-specific skills (instructions, metadata, schemas, and r
 - **Nginx Ingress Load Balancing**: Configured with `least_conn` routing, stream buffer management (`proxy_buffering off`), and dedicated `/healthz` health checks for zero-downtime rolling updates.
 
 ### 3. Developer & Agent Tooling
-- **Built-in Skill Validator CLI**: `skill-mcp validate ./skills` automatically verifies directory structures, YAML frontmatter, and asset links before packaging.
+- **Built-in Skill Validator CLI**: `skillmcp validate ./skills` automatically verifies directory structures, YAML frontmatter, and asset links before packaging.
 - **Dynamic Discovery & Search**: MCP tools (`list_skills`, `get_skill`, `search_skills`, `read_skill_reference`) and resources (`skill://{name}`) allow agents to dynamically query and inspect skills at runtime.
 - **Dual Compose Environments**: `docker-compose.local.yml` for instant local development with volume-mounted hot reloading, and `docker-compose.yml` for production deployments.
 - **TREM Python Standard**: Built strictly following Testable, Readable, Extensible, and Maintainable (TREM) principles with `uv`, `pydantic-settings`, standard library `logging`, and `pytest`.
@@ -53,17 +53,17 @@ uv sync
 uv run pytest -v
 
 # Validate skills
-uv run skill-mcp validate ./skills
+uv run skillmcp validate ./skills
 
 # List discovered skills
-uv run skill-mcp list --skills-path ./skills
+uv run skillmcp list --skills-path ./skills
 ```
 
 ### Running the Server Locally
 
 ```bash
 # Start MCP server directly
-uv run skill-mcp serve --host 0.0.0.0 --port 8000
+uv run skillmcp serve --host 0.0.0.0 --port 8000
 ```
 
 ---

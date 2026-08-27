@@ -1,5 +1,5 @@
 ---
-name: skill-mcp
+name: skillmcp
 description: >-
   Connect to, query, and manage skills using the SkillMCP (Skill Management System) MCP server over Streamable HTTP (/mcp) or SSE (/sse).
   Use this skill whenever discovering, searching, inspecting, or fetching AI agent skills, reference documents, or examples from a SkillMCP server instance.
@@ -31,7 +31,7 @@ To register SkillMCP as a remote HTTP MCP server in Antigravity or standard MCP 
 ```json
 {
   "mcpServers": {
-    "skill-mcp": {
+    "skillmcp": {
       "type": "http",
       "url": "http://localhost:8080/mcp"
     }

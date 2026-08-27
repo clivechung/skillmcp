@@ -43,7 +43,7 @@ async def test_scanner_loads_valid_skills(tmp_path: Path):
     )
 
     # Import from domain package (Red phase: module to be implemented)
-    from skill_mcp.domain.scanner import SkillScanner
+    from skillmcp.domain.scanner import SkillScanner
 
     # Act
     scanner = SkillScanner(skills_root=tmp_path)
@@ -70,8 +70,8 @@ async def test_get_skill_by_name(tmp_path: Path):
         body="Useful for Python coding.",
     )
 
-    from skill_mcp.domain.service import SkillService
-    from skill_mcp.domain.scanner import SkillScanner
+    from skillmcp.domain.service import SkillService
+    from skillmcp.domain.scanner import SkillScanner
 
     scanner = SkillScanner(skills_root=tmp_path)
     service = SkillService(scanner=scanner)
@@ -85,8 +85,8 @@ async def test_get_skill_by_name(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_get_nonexistent_skill_returns_none(tmp_path: Path):
     """Verifies that querying a missing skill returns None or raises domain error."""
-    from skill_mcp.domain.service import SkillService
-    from skill_mcp.domain.scanner import SkillScanner
+    from skillmcp.domain.service import SkillService
+    from skillmcp.domain.scanner import SkillScanner
 
     scanner = SkillScanner(skills_root=tmp_path)
     service = SkillService(scanner=scanner)

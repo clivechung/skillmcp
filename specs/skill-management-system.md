@@ -9,7 +9,7 @@ AI agents require access to specialized, domain-specific skills (instructions, m
 
 ## Solution
 
-The **Skill Management System (`skill-mcp`)** provides a containerized, horizontally scalable Model Context Protocol (MCP) server that bundles skill management and distribution:
+The **Skill Management System (`skillmcp`)** provides a containerized, horizontally scalable Model Context Protocol (MCP) server that bundles skill management and distribution:
 1. **Containerized Skill & Server Package**: Skill definitions (`SKILL.md`, references, and examples) and the FastMCP application are built and packaged into a single container image.
 2. **Horizontal Scalability (MCP over Streamable HTTP/SSE)**: Implements Streamable HTTP/SSE MCP transport so multiple stateless backend replicas can run concurrently behind a load balancer.
 3. **Nginx Ingress**: Provides reverse proxying, request routing, header buffer management for SSE streaming, and load balancing across backend instances.
@@ -43,14 +43,14 @@ The **Skill Management System (`skill-mcp`)** provides a containerized, horizont
 ## Implementation Decisions
 
 ### 1. Architecture & Layering
-- **Domain Layer (`src/skill_mcp/domain/`)**:
+- **Domain Layer (`src/skillmcp/domain/`)**:
   - `models.py`: Pydantic models for `SkillMetadata`, `SkillDocument`, `SkillResource`.
   - `scanner.py` & `service.py`: Skill repository scanning filesystem directories, parsing YAML frontmatter, and extracting markdown sections.
-- **Server / MCP Layer (`src/skill_mcp/server/`)**:
+- **Server / MCP Layer (`src/skillmcp/server/`)**:
   - `mcp_app.py`: FastMCP server exposing tools (`list_skills`, `get_skill`, `read_skill_reference`, `search_skills`) and resources (`skill://{name}`).
   - `http_transport.py`: ASGI/HTTP SSE transport runner allowing stateless request-response scaling.
-- **Configuration & Infrastructure (`src/skill_mcp/config.py`)**:
-  - `Settings`: Pydantic `BaseSettings` reading `SKILL_MCP_HOST`, `SKILL_MCP_PORT`, `SKILL_MCP_SKILLS_DIR`, `SKILL_MCP_LOG_LEVEL`.
+- **Configuration & Infrastructure (`src/skillmcp/config.py`)**:
+  - `Settings`: Pydantic `BaseSettings` reading `SKILLMCP_HOST`, `SKILLMCP_PORT`, `SKILLMCP_SKILLS_DIR`, `SKILLMCP_LOG_LEVEL`.
   - Standard library `logging` configured across all modules.
 
 ### 2. Packaging & Containerization
@@ -59,15 +59,15 @@ The **Skill Management System (`skill-mcp`)** provides a containerized, horizont
   - Runtime stage: Minimal Python 3.11/3.12 slim image copying only the venv, application code, and default packaged `skills/` directory.
   - Non-root user execution for security hardening.
 - **Ingress (`nginx/nginx.conf`)**:
-  - Configures `upstream skill_mcp_backend` load-balancing multiple app containers.
+  - Configures `upstream skillmcp_backend` load-balancing multiple app containers.
   - Configures `proxy_buffering off`, `proxy_cache off`, and `proxy_read_timeout 3600s` for uninterrupted HTTP/SSE MCP streams.
 
 ### 3. Docker Compose Topologies
 - **Production Topology (`docker-compose.yml`)**:
-  - Services: `nginx` (port `8080:80`) and `skill-mcp-app` (scalable via `deploy.replicas` or compose replicas).
-  - Uses published image `docker.io/<repo>/skill-mcp:latest`.
+  - Services: `nginx` (port `8080:80`) and `skillmcp-app` (scalable via `deploy.replicas` or compose replicas).
+  - Uses published image `docker.io/<repo>/skillmcp:latest`.
 - **Local Development Topology (`docker-compose.local.yml`)**:
-  - Services: `nginx` (port `8080:80`) and `skill-mcp-app` (`build: .`).
+  - Services: `nginx` (port `8080:80`) and `skillmcp-app` (`build: .`).
   - Volume mount: `./skills:/app/skills:ro` and `./src:/app/src:ro`.
   - Environment variable overrides for live reload and debug logging.
 

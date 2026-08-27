@@ -2,10 +2,10 @@ import pytest
 from pathlib import Path
 import httpx
 
-from skill_mcp.domain.scanner import SkillScanner
-from skill_mcp.domain.service import SkillService
-from skill_mcp.server.mcp_app import create_app, create_mcp_server
-from skill_mcp.config import Settings
+from skillmcp.domain.scanner import SkillScanner
+from skillmcp.domain.service import SkillService
+from skillmcp.server.mcp_app import create_app, create_mcp_server
+from skillmcp.config import Settings
 
 
 def create_sample_skill(base_dir: Path, skill_name: str, desc: str, body: str) -> None:
@@ -30,7 +30,7 @@ async def test_healthz_endpoint(tmp_path: Path):
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["service"] == "skill-mcp"
+        assert data["service"] == "skillmcp"
         assert "version" in data
 
 

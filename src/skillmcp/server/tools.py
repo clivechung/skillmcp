@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any
-from skill_mcp.domain.service import SkillService
+from skillmcp.domain.service import SkillService
 
 logger = logging.getLogger(__name__)
 

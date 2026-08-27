@@ -13,7 +13,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: clivechung/skill-mcp
+  IMAGE_NAME: clivechung/skillmcp
 
 jobs:
   test:
@@ -38,7 +38,7 @@ jobs:
         run: uv run pytest -v
 
       - name: Validate bundled skills
-        run: uv run skill-mcp validate ./skills
+        run: uv run skillmcp validate ./skills
 
   build-and-push:
     name: Build & Push Docker Image

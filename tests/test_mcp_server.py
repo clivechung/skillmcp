@@ -19,9 +19,9 @@ async def test_mcp_tool_list_skills(tmp_path: Path):
     create_sample_skill(tmp_path, "skill-a", "First skill description", "Body of A")
     create_sample_skill(tmp_path, "skill-b", "Second skill description", "Body of B")
 
-    from skill_mcp.domain.scanner import SkillScanner
-    from skill_mcp.domain.service import SkillService
-    from skill_mcp.server.tools import create_mcp_tools
+    from skillmcp.domain.scanner import SkillScanner
+    from skillmcp.domain.service import SkillService
+    from skillmcp.server.tools import create_mcp_tools
 
     scanner = SkillScanner(skills_root=tmp_path)
     service = SkillService(scanner=scanner)
@@ -39,9 +39,9 @@ async def test_mcp_tool_get_skill_content(tmp_path: Path):
     """Verifies that the MCP get_skill tool retrieves full markdown instructions and references."""
     create_sample_skill(tmp_path, "code-analyzer", "Performs static analysis.", "## Steps\n1. Run linter")
 
-    from skill_mcp.domain.scanner import SkillScanner
-    from skill_mcp.domain.service import SkillService
-    from skill_mcp.server.tools import create_mcp_tools
+    from skillmcp.domain.scanner import SkillScanner
+    from skillmcp.domain.service import SkillService
+    from skillmcp.server.tools import create_mcp_tools
 
     scanner = SkillScanner(skills_root=tmp_path)
     service = SkillService(scanner=scanner)

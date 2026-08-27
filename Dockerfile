@@ -36,9 +36,9 @@ COPY --chown=skillmcp:skillmcp skills ./skills
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    SKILL_MCP_HOST="0.0.0.0" \
-    SKILL_MCP_PORT=8000 \
-    SKILL_MCP_SKILLS_DIR="/app/skills"
+    SKILLMCP_HOST="0.0.0.0" \
+    SKILLMCP_PORT=8000 \
+    SKILLMCP_SKILLS_DIR="/app/skills"
 
 # Switch to non-root user
 USER skillmcp
@@ -48,4 +48,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')" || exit 1
 
-CMD ["skill-mcp", "serve"]
+CMD ["skillmcp", "serve"]

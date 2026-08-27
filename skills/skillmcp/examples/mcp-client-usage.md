@@ -88,7 +88,7 @@ curl -X POST http://localhost:8080/mcp \
 ```json
 {
   "mcpServers": {
-    "skill-mcp": {
+    "skillmcp": {
       "type": "http",
       "url": "http://localhost:8080/mcp"
     }

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """Application settings with environment variable overrides."""
 
     model_config = SettingsConfigDict(
-        env_prefix="SKILL_MCP_",
+        env_prefix="SKILLMCP_",
         env_file=".env",
         extra="ignore",
     )
