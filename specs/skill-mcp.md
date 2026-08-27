@@ -19,7 +19,7 @@ The **Skill Management System (`skillmcp`)** is a containerized, horizontally sc
    - `docker-compose.yml`: Production-ready multi-replica deployment pulling images from `docker.io`.
    - `docker-compose.local.yml`: Developer environment enabling source builds, volume-mounted hot reloading of skill files, and full stack ingress testing.
 5. **Rich CLI Utility**: Embedded Typer/Rich CLI for running servers (`skillmcp serve`), validating skill directory structures (`skillmcp validate`), and inspecting available skills (`skillmcp list`).
-6. **Automated CI/CD Pipeline**: GitHub Actions workflow supporting dual-channel publishing: snapshot images with commit SHAs on development branch pushes and immutable semver releases on tag publications.
+6. **Automated CI/CD Pipeline**: GitHub Actions workflow executing automated testing and skill validation on pull requests and pushes, and building/pushing immutable semver release images to Docker Hub on version tag releases (`v*.*.*`).
 
 ---
 
@@ -38,7 +38,7 @@ The **Skill Management System (`skillmcp`)** is a containerized, horizontally sc
 ### DevOps & Platform Engineering
 7. **Stateless Scalability**: As a platform engineer, I want stateless MCP application instances scaled horizontally behind Nginx, so that the service handles concurrent agent traffic seamlessly.
 8. **Health Probing**: As a cluster orchestrator (Kubernetes/Compose), I want standardized `/healthz` endpoints on both Nginx and the MCP application, so that unhealthy instances are automatically detected and recycled.
-9. **Automated Container Delivery**: As a release manager, I want automated CI/CD publishing to Docker Hub (`clivechung/skillmcp`) with snapshot tagging for `main` and semver tagging for releases.
+9. **Automated Container Delivery**: As a release manager, I want automated CI/CD publishing to Docker Hub (`clivechung/skillmcp`) triggered exclusively on version tag releases (`v*.*.*`), so that production deployments receive stable, verified container builds.
 10. **Code Quality & TREM Standards**: As an engineer, I want the codebase to adhere to TREM principles (Testable, Readable, Extensible, Maintainable) using `uv`, `pydantic-settings`, `typer`, `fastmcp`, and `pytest`.
 
 ---
@@ -226,7 +226,7 @@ Detailed instructions, steps, constraints, and guidelines for the AI agent...
 File: `.github/workflows/docker-publish.yml`
 
 ```
- [Trigger: push to main/develop, PRs, tags v*.*.*]
+ [Trigger: push to main, PRs, tags v*.*.*]
                         |
                         v
         +-------------------------------+
@@ -237,15 +237,15 @@ File: `.github/workflows/docker-publish.yml`
         |  4. uv run skillmcp validate  |
         +-------------------------------+
                         |
-                        v (if push event & test passed)
+                        v (if tag release v*.*.* & test passed)
         +-------------------------------+
-        |  Job: build-and-push          |
+        |  Job: build-and-push (Release)|
         |  1. Docker Buildx setup       |
         |  2. Docker Hub Login          |
-        |  3. Metadata & Tag Resolution |
-        |     - main push -> snapshot,  |
-        |       sha-<sha>               |
-        |     - tag -> semver, latest   |
+        |  3. Semver Metadata & Tagging |
+        |     - {{version}} (e.g. 0.1.0)|
+        |     - {{major}}.{{minor}}     |
+        |     - latest                  |
         |  4. Build & Push via GHA cache|
         +-------------------------------+
 ```

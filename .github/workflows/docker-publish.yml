@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
     tags:
       - "v*.*.*"
   pull_request:
@@ -41,10 +40,10 @@ jobs:
         run: uv run skillmcp validate ./skills
 
   build-and-push:
-    name: Build & Push Docker Image
+    name: Build & Push Docker Image (Release Only)
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -64,10 +63,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=snapshot,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha,prefix=sha-,enable=${{ github.ref == 'refs/heads/main' }}
             type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
 
       - name: Build and push image
         uses: docker/build-push-action@v5
