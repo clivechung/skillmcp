@@ -89,7 +89,11 @@ def create_app(service: SkillService | None = None, settings: Settings | None = 
         service = SkillService(scanner=scanner)
 
     mcp_server = create_mcp_server(service=service, name=settings.app_name)
-    app = mcp_server.http_app(transport=settings.transport)
+    is_streamable = settings.transport in ("streamable-http", "http")
+    app = mcp_server.http_app(
+        transport=settings.transport,
+        stateless_http=settings.stateless_http if is_streamable else False,
+    )
 
     # If streamable-http transport is active, register route alias for /sse so clients pointing to /sse work seamlessly
     streamable_route = None

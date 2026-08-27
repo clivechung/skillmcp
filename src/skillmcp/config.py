@@ -38,6 +38,10 @@ class Settings(BaseSettings):
         default="streamable-http",
         description="MCP transport type ('streamable-http', 'http', or 'sse').",
     )
+    stateless_http: bool = Field(
+        default=True,
+        description="Enable pure stateless Streamable HTTP mode without session tracking.",
+    )
 
 
 def get_settings() -> Settings:
