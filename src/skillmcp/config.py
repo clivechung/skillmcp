@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     )
     transport: str = Field(
         default="streamable-http",
-        description="MCP transport type ('streamable-http', 'http', or 'sse').",
+        description="MCP transport type ('streamable-http' or 'http').",
     )
     stateless_http: bool = Field(
         default=True,
