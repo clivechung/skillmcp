@@ -100,3 +100,11 @@ docker compose up -d
 - **Seam 1: Domain Service**: `tests/test_domain_service.py` (Validates scanner, parser, traversal safety, and query engine)
 - **Seam 2: MCP Protocol & Tools**: `tests/test_mcp_server.py` & `tests/test_mcp_http.py` (Validates FastMCP tools, resources, and ASGI transport routes)
 - **Seam 3: CLI & Integration**: `tests/test_cli.py` (Validates CLI validator, list, and serve commands)
+
+---
+
+## License & Attribution
+
+- **Core Project**: Released under the [MIT License](LICENSE) (c) 2026 clivechung.
+- **Skills & Attributions**: Declarations, licenses, and provenance for all bundled server skills and agent development skills are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
