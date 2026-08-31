@@ -71,21 +71,156 @@ uv run skillmcp serve --host 0.0.0.0 --port 8000
 
 ---
 
-## Docker Topologies
+## Container Usage & Deployment
 
-### Local Development (Live Reload & Ingress)
+### 1. Run Standalone Docker Container
+
+Pull and run the pre-built image directly from Docker Hub:
 
 ```bash
-docker compose -f docker-compose.local.yml up -d --build
-```
-- Nginx Ingress: `http://localhost:8080` (`/healthz` health check)
-- Backend App: `http://localhost:8000` (`/healthz` health check)
+# Run standalone container with bundled skills
+docker run -d \
+  --name skillmcp \
+  -p 8000:8000 \
+  docker.io/clivechung/skillmcp:latest
 
-### Production Deployment
+# Or mount your own custom skills directory
+docker run -d \
+  --name skillmcp \
+  -p 8000:8000 \
+  -v $(pwd)/skills:/app/skills:ro \
+  docker.io/clivechung/skillmcp:latest
+```
+
+Verify the server is running:
+```bash
+curl http://localhost:8000/healthz
+# {"status":"healthy","service":"skillmcp","version":"0.1.0"}
+```
+
+---
+
+### 2. Run with Docker Compose (Production Topology)
+
+Runs 2 backend `skillmcp` replicas behind an Nginx load balancer:
 
 ```bash
 docker compose up -d
 ```
+
+- **MCP Endpoint**: `http://localhost:8080/mcp`
+- **Ingress Health Check**: `http://localhost:8080/healthz`
+
+---
+
+### 3. Local Development (Live Reload & Volume Mounts)
+
+```bash
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+- **Nginx Ingress**: `http://localhost:8080/mcp`
+- **Backend App (Direct)**: `http://localhost:8000/mcp`
+
+---
+
+## Client Integration Guide
+
+SkillMCP exposes a stateless Model Context Protocol (MCP) server over Streamable HTTP at `/mcp`. Configure your favorite AI coding assistant or agent CLI using the examples below.
+
+### 1. Google Antigravity (AGY)
+
+Add SkillMCP to your Antigravity configuration (either workspace-level `.agents/mcp_config.json` or global `~/.gemini/config/mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "skillmcp": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+> **Note**: If connecting directly to the standalone container without Nginx, use `http://localhost:8000/mcp`.
+
+---
+
+### 2. OpenAI Codex (Visio IDE)
+
+For projects developed in Visio / VS Code IDE with OpenAI Codex, add the server to your project's `.vscode/mcp.json` or workspace settings:
+
+```json
+{
+  "mcpServers": {
+    "skillmcp": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+If your IDE environment or extension utilizes a stdio bridge for remote HTTP endpoints, configure `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "skillmcp": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8080/mcp"]
+    }
+  }
+}
+```
+
+---
+
+### 3. Claude CLI (Visio IDE & Terminal)
+
+#### Direct Registration via Claude CLI:
+In your Visio IDE integrated terminal or command line:
+```bash
+# Add the streamable HTTP MCP server to Claude CLI
+claude mcp add --transport http skillmcp http://localhost:8080/mcp
+```
+
+#### Via Visio / Claude MCP Configuration (`~/.claude.json` or `claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "skillmcp": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}
+```
+
+Or using `mcp-remote` for stdio-only bridge clients:
+```json
+{
+  "mcpServers": {
+    "skillmcp": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8080/mcp"]
+    }
+  }
+}
+```
+
+---
+
+### Available MCP Tools & Resources
+
+Once connected, your agents will have immediate access to the following tools:
+
+| Tool / Resource | Description |
+|---|---|
+| `list_skills` | List all discovered skills with metadata, descriptions, references, and examples. |
+| `get_skill(name)` | Retrieve full markdown instructions and frontmatter for a specific skill. |
+| `search_skills(query)` | Search available skills by keyword or domain phrase. |
+| `read_skill_reference(name, ref_path)` | Read auxiliary reference documents bundled with a skill. |
+| `read_skill_example(name, example_path)` | Read practical code and workflow examples for a skill. |
+| `skill://{name}` *(Resource)* | Read the raw markdown skill file as an MCP resource. |
 
 ---
 
@@ -101,4 +236,5 @@ docker compose up -d
 
 - **Core Project**: Released under the [MIT License](LICENSE) (c) 2026 clivechung.
 - **Skills & Attributions**: Declarations, licenses, and provenance for all bundled server skills and agent development skills are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 
