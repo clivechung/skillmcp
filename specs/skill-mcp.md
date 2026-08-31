@@ -13,8 +13,8 @@ AI agents require access to specialized, domain-specific skills (instructions, m
 
 The **Skill Management System (`skillmcp`)** is a containerized, horizontally scalable Model Context Protocol (MCP) server that standardizes skill distribution, discovery, and execution for AI agents:
 1. **Containerized Skill & Server Package**: Skill definitions (`SKILL.md`, `references/`, and `examples/`) and the FastMCP application are built and packaged into an optimized, secure container image.
-2. **Horizontal Scalability (Stateless MCP over Streamable HTTP)**: Implements Streamable HTTP MCP transport where stateless backend replicas handle independent request/response cycles without sticky sessions or long-lived server-held sockets, alongside backward-compatible SSE support.
-3. **Nginx Ingress Reverse Proxy**: Provides load balancing (`least_conn`), request routing, SSE stream buffer management (`proxy_buffering off`), and orchestrator health checks.
+2. **Horizontal Scalability (Stateless MCP over Streamable HTTP)**: Implements Streamable HTTP MCP transport where stateless backend replicas handle independent request/response cycles without sticky sessions or long-lived server-held sockets, enabling Kubernetes Horizontal Pod Autoscaling (HPA).
+3. **Nginx Ingress Reverse Proxy**: Provides load balancing (`least_conn`), request routing, real-time chunk buffer management (`proxy_buffering off`), and orchestrator health checks.
 4. **Dual Compose Environments**:
    - `docker-compose.yml`: Production-ready multi-replica deployment pulling images from `docker.io`.
    - `docker-compose.local.yml`: Developer environment enabling source builds, volume-mounted hot reloading of skill files, and full stack ingress testing.
@@ -50,13 +50,13 @@ The **Skill Management System (`skillmcp`)** is a containerized, horizontally sc
                      |         AI Agent / MCP Client         |
                      +---------------------------------------+
                                          |
-                                         | HTTP / SSE Stream
+                                         | HTTP (JSON-RPC)
                                          v
                      +---------------------------------------+
                      |         Nginx Ingress (Port 80)       |
                      |   - Least-Conn Load Balancing         |
                      |   - Ingress Healthcheck (/healthz)    |
-                     |   - SSE Buffering & Timeout Handling  |
+                     |   - Buffer & Timeout Handling         |
                      +---------------------------------------+
                                /                   \
          Upstream Proxy (HTTP) /                     \ Upstream Proxy (HTTP)
@@ -65,7 +65,7 @@ The **Skill Management System (`skillmcp`)** is a containerized, horizontally sc
                |  SkillMCP Replica 1       |   |  SkillMCP Replica 2       |
                |  (FastMCP / Starlette)    |   |  (FastMCP / Starlette)    |
                |  - /healthz               |   |  - /healthz               |
-               |  - /mcp & /sse            |   |  - /mcp & /sse            |
+               |  - /mcp (Streamable HTTP) |   |  - /mcp (Streamable HTTP) |
                |  - Tools & Resources      |   |  - Tools & Resources      |
                +---------------------------+   +---------------------------+
                              |                               |
@@ -107,6 +107,7 @@ The **Skill Management System (`skillmcp`)** is a containerized, horizontally sc
      - `SKILLMCP_LOG_LEVEL` (default: `"INFO"`)
      - `SKILLMCP_APP_NAME` (default: `"SkillMCP Server"`)
      - `SKILLMCP_TRANSPORT` (default: `"streamable-http"`)
+     - `SKILLMCP_STATELESS_HTTP` (default: `True`)
 
 3. **Domain Layer (`src/skillmcp/domain/`)**:
    - `models.py`:
@@ -122,9 +123,8 @@ The **Skill Management System (`skillmcp`)** is a containerized, horizontally sc
    - `tools.py`: Encapsulates MCP tool invocations delegating to `SkillService`.
    - `mcp_app.py`:
      - Configures FastMCP instance with 5 tools and 1 resource template.
-     - Wraps FastMCP HTTP ASGI app within Starlette.
+     - Wraps FastMCP HTTP ASGI app within Starlette in stateless Streamable HTTP mode.
      - Registers `/healthz` Starlette JSON endpoint.
-     - Implements route aliasing: routes both `/mcp` and `/sse` to the streamable HTTP transport endpoint.
 
 ---
 
@@ -185,15 +185,11 @@ Detailed instructions, steps, constraints, and guidelines for the AI agent...
 | Path | Method | Purpose | Response |
 | :--- | :--- | :--- | :--- |
 | `/healthz` | `GET` | Application health monitoring | `{"status": "healthy", "service": "skillmcp", "version": "0.1.0"}` |
-| `/mcp` | `GET`, `POST` | Primary FastMCP streamable-http endpoint | MCP transport stream / message exchange |
-| `/sse` | `GET`, `POST` | Backward-compatible SSE route alias | Proxied to MCP transport endpoint |
+| `/mcp` | `POST` | Primary FastMCP streamable-http endpoint | MCP transport stream / message exchange |
 
-### 6.4 Transport Modes & Scalability Implications
+### 6.4 Transport & Scalability (Stateless Streamable HTTP)
 
-> [!WARNING]
-> **Transport Selection & Load Balancing Constraints**:
-> - **Streamable HTTP (`SKILLMCP_TRANSPORT=streamable-http`, Default)**: Each JSON-RPC invocation is a discrete HTTP POST request. Backend instances hold no persistent socket session state between client requests, enabling full horizontal auto-scaling and stateless load balancing across arbitrary replicas without session affinity.
-> - **Native SSE (`SKILLMCP_TRANSPORT=sse`)**: Stateful transport. The initial `GET /sse` handshake opens a long-lived persistent TCP connection held in server memory on that specific replica instance. Subsequent `POST /messages/?session_id=...` calls routed by a round-robin or least-conn load balancer to a different replica will fail with 404/session mismatch errors. Deploying in Native SSE mode requires either a single replica or sticky session ingress routing (e.g. Nginx `ip_hash` or cookie affinity).
+Each JSON-RPC invocation is a discrete HTTP POST request. Backend instances hold no persistent socket session state between client requests, enabling full horizontal auto-scaling (HPA) and stateless load balancing across arbitrary replicas without session affinity.
 
 ---
 
@@ -274,7 +270,7 @@ The test architecture avoids brittle end-to-end couplings by exercising four exp
    - Verifies tool registrations (`list_skills`, `get_skill`, `search_skills`, `read_skill_reference`, `read_skill_example`) and resource decorators on the FastMCP instance.
 3. **Seam 3: HTTP Transport, Routing & Ingress (`tests/test_mcp_http.py`)**
    - Exercises the Starlette ASGI application via `httpx.AsyncClient`.
-   - Tests `/healthz` JSON contract, `/sse` and `/mcp` route resolution, and simulated proxy headers.
+   - Tests `/healthz` JSON contract, `/mcp` stateless route resolution, and simulated proxy headers.
 4. **Seam 4: CLI Interface (`tests/test_cli.py`)**
    - Tests `skillmcp validate`, `skillmcp list`, and `skillmcp serve` CLI commands using Typer's `CliRunner`.
 

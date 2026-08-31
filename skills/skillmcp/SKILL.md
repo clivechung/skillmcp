@@ -20,8 +20,7 @@ SkillMCP delivers a centralized, horizontally scalable skill repository designed
 
 | Transport Mode | Endpoint URL | HTTP Method | Header Requirements | Statefulness |
 | :--- | :--- | :--- | :--- | :--- |
-| **Streamable HTTP (Default)** | `http://<host>:8080/mcp` *(or `/sse`)* | `POST` | `Accept: application/json, text/event-stream`<br>`Content-Type: application/json` | **Stateless** (horizontally scalable) |
-| **Native SSE** | `http://<host>:8080/sse` | `GET` (stream) + `POST` (/messages) | Standard SSE headers | **Stateful** (requires session affinity) |
+| **Streamable HTTP** | `http://<host>:8080/mcp` | `POST` | `Accept: application/json, text/event-stream`<br>`Content-Type: application/json` | **Stateless** (horizontally scalable, HPA ready) |
 | **Health Check** | `http://<host>:8080/healthz` | `GET` | None | **Stateless** |
 
 ### 2. Antigravity MCP Client Configuration (`mcp_config.json`)
@@ -38,9 +37,6 @@ To register a remote SkillMCP instance in Antigravity or standard MCP client con
   }
 }
 ```
-
-> [!NOTE]
-> SkillMCP aliases `/sse` to the Streamable HTTP handler when running in streamable mode, so existing client configs pointing to `http://localhost:8080/sse` work out of the box.
 
 ---
 

@@ -11,7 +11,7 @@ AI agents rely on domain-specific skills (instructions, metadata, schemas, and r
 - **Lack of Versioning & Diagnostics Friction**: When skills are edited without immutable versioning, diagnosing regressions or agent behavior shifts becomes nearly impossible.
 - **Single-Host Scalability Limits**: Traditional stdio-based MCP servers are tied to single local host processes, blocking horizontal scaling and high availability.
 
-**SkillMCP** solves these challenges by providing a **centralized, containerized, and horizontally scalable Skill Management System** powered by **Stateless Streamable HTTP** (with backward-compatible SSE support).
+**SkillMCP** solves these challenges by providing a **centralized, containerized, and horizontally scalable Skill Management System** powered by **Stateless Streamable HTTP**.
 
 ---
 
@@ -22,17 +22,11 @@ AI agents rely on domain-specific skills (instructions, metadata, schemas, and r
 - **Unified Skill Repository**: Eliminates fragmented multi-repo drift by managing, validating, and bundling all domain skills in a single maintainable repository.
 - **Fast Troubleshooting & Traceability**: Versioned container tags make it straightforward to diagnose agent issues, reproduce historical behavior, and roll back changes instantly.
 
-### 2. Stateless MCP over Streamable HTTP (Horizontal Scalability)
+### 2. Stateless MCP over Streamable HTTP (Horizontal Scalability & HPA Ready)
 - **True Stateless Request/Response Architecture**: Streamable HTTP uses standard HTTP POST requests where backend instances do not maintain long-lived in-memory socket state between client calls.
-- **Session Decoupling & Horizontal Scaling**: Individual requests can be routed to any backend container replica behind an Nginx reverse proxy or load balancer without requiring sticky sessions.
+- **Seamless Horizontal Pod Autoscaling (HPA)**: Without sticky sessions or persistent TCP stream locking, backend replicas can scale up/down dynamically and handle requests evenly across any load balancer.
 - **Short-Lived Streaming**: Responses requiring streaming are upgraded to `text/event-stream` only for the duration of that specific payload and close immediately once the JSON-RPC response finishes.
-- **Legacy SSE Compatibility**: Supports legacy Server-Sent Events (`/sse`) with configured proxy buffer bypass (`proxy_buffering off`) and extended read timeouts for clients requiring persistent channels.
 - **Nginx Ingress Load Balancing**: Configured with `least_conn` routing, keepalive connection pooling, and dedicated `/healthz` health checks for zero-downtime rolling updates.
-
-> [!WARNING]
-> **Transport & Horizontal Scalability**:
-> - **Streamable HTTP (`default`, recommended)**: Truly stateless. Allows horizontal auto-scaling and arbitrary load-balancing across replicas without session affinity.
-> - **Native SSE (`SKILLMCP_TRANSPORT=sse`)**: Stateful due to persistent TCP stream binding. In native SSE mode, horizontal scaling behind standard round-robin/least-connections load balancers will cause `POST /messages` routing errors unless sticky sessions (e.g. Nginx `ip_hash` or cookie affinity) or a single-replica deployment is used.
 
 ### 3. Developer & Agent Tooling
 - **Built-in Skill Validator CLI**: `skillmcp validate ./skills` automatically verifies directory structures, YAML frontmatter, and asset links before packaging.

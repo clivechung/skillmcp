@@ -5,7 +5,6 @@ from typing import Any
 from fastmcp import FastMCP
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
-from starlette.routing import Route, Mount
 
 from skillmcp import __version__
 from skillmcp.config import Settings, get_settings
@@ -80,7 +79,7 @@ async def healthz_endpoint(request: Any) -> JSONResponse:
 
 
 def create_app(service: SkillService | None = None, settings: Settings | None = None) -> Starlette:
-    """Create ASGI HTTP/SSE application with health check and MCP transport."""
+    """Create ASGI HTTP application with health check and stateless MCP transport."""
     if settings is None:
         settings = get_settings()
 
@@ -89,27 +88,10 @@ def create_app(service: SkillService | None = None, settings: Settings | None = 
         service = SkillService(scanner=scanner)
 
     mcp_server = create_mcp_server(service=service, name=settings.app_name)
-    is_streamable = settings.transport in ("streamable-http", "http")
     app = mcp_server.http_app(
         transport=settings.transport,
-        stateless_http=settings.stateless_http if is_streamable else False,
+        stateless_http=settings.stateless_http,
     )
-
-    # If streamable-http transport is active, register route alias for /sse so clients pointing to /sse work seamlessly
-    streamable_route = None
-    for r in app.routes:
-        if getattr(r, "path", None) == "/mcp":
-            streamable_route = r
-            break
-
-    if streamable_route:
-        app.routes.append(
-            Route(
-                "/sse",
-                endpoint=streamable_route.endpoint,
-                methods=["POST", "GET", "OPTIONS", "HEAD"],
-            )
-        )
 
     app.add_route("/healthz", healthz_endpoint, methods=["GET"])
     return app

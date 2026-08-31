@@ -51,7 +51,7 @@ async def test_fastmcp_server_direct_tool_invocation(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_streamable_http_transport(tmp_path: Path):
-    """Verifies that Streamable HTTP transport accepts initialize on /mcp and /sse alias."""
+    """Verifies that Streamable HTTP transport accepts initialize on /mcp in stateless mode."""
     create_sample_skill(tmp_path, "skill-stream", "Testing streamable skill", "Body content")
 
     scanner = SkillScanner(skills_root=tmp_path)
@@ -77,10 +77,6 @@ async def test_streamable_http_transport(tmp_path: Path):
             resp_mcp = await client.post("/mcp", json=init_payload, headers=headers)
             assert resp_mcp.status_code == 200
 
-            # Post to alias /sse
-            resp_sse = await client.post("/sse", json=init_payload, headers=headers)
-            assert resp_sse.status_code == 200
-
             # Stateless tool list call without session tracking
             tool_list_payload = {
                 "jsonrpc": "2.0",
@@ -91,30 +87,5 @@ async def test_streamable_http_transport(tmp_path: Path):
             resp_tools = await client.post("/mcp", json=tool_list_payload, headers=headers)
             assert resp_tools.status_code == 200
             assert "list_skills" in resp_tools.text
-
-
-@pytest.mark.asyncio
-async def test_sse_transport_app_configuration(tmp_path: Path):
-    """Verifies that the SSE transport mode properly configures routes and healthz."""
-    create_sample_skill(tmp_path, "skill-init", "Testing init skill", "Body instructions")
-
-    scanner = SkillScanner(skills_root=tmp_path)
-    service = SkillService(scanner=scanner)
-    settings = Settings(transport="sse")
-    app = create_app(service=service, settings=settings)
-
-    # Verify route registrations for SSE mode
-    route_paths = [r.path for r in app.routes if hasattr(r, "path")]
-    assert "/sse" in route_paths
-    assert "/messages" in route_paths
-    assert "/healthz" in route_paths
-
-    # Verify healthz endpoint responds in SSE mode
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.get("/healthz")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["status"] == "healthy"
 
 

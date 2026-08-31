@@ -30,7 +30,7 @@ def serve(
     skills_dir: Annotated[Optional[Path], typer.Option(help="Directory containing skills")] = None,
     log_level: Annotated[Optional[str], typer.Option(help="Logging level (DEBUG, INFO, etc.)")] = None,
 ) -> None:
-    """Start the SkillMCP MCP HTTP/SSE server."""
+    """Start the SkillMCP MCP HTTP server."""
     settings = Settings()
     if host:
         settings.host = host
