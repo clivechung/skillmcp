@@ -14,6 +14,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy source code and install project package
 COPY src ./src
+COPY VERSION ./VERSION
 RUN uv sync --frozen --no-dev
 
 # ==========================================
@@ -30,8 +31,9 @@ WORKDIR /app
 # Copy virtual environment from builder
 COPY --from=builder --chown=skillmcp:skillmcp /app/.venv /app/.venv
 
-# Copy source code and default skills
+# Copy source code, version, and default skills
 COPY --chown=skillmcp:skillmcp src ./src
+COPY --chown=skillmcp:skillmcp VERSION ./VERSION
 COPY --chown=skillmcp:skillmcp skills ./skills
 
 ENV PATH="/app/.venv/bin:$PATH" \
